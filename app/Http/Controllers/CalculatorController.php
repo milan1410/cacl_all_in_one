@@ -6,6 +6,12 @@ use Illuminate\Http\Request;
 
 class CalculatorController extends Controller
 {
+    /**
+     * General Calculation.
+     *
+     * <p>This API endpoint performs a general calculation. The `calculate` method handles the input parameters and provides a result based on the implemented logic. This endpoint is versatile and can be tailored for different types of computational tasks.</p>
+     */
+
     public function calculate(Request $request)
     {
         $num1 = $request->input('num1');
@@ -38,5 +44,4 @@ class CalculatorController extends Controller
 
         return response()->json(['result' => $result]);
     }
-
 }

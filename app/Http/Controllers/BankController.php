@@ -6,6 +6,11 @@ use Illuminate\Http\Request;
 
 class BankController extends Controller
 {
+    /**
+     * Basic Loan Calculation.
+     *
+     * <p>This API endpoint calculates the basic loan parameters, such as monthly payments and interest based on user inputs like loan amount, interest rate, and term. It is ideal for simple loan evaluation.</p>
+     */
     public function calculateLoanBasic(Request $request)
     {
         $principal = $request->input('principal'); // Loan amount
@@ -36,6 +41,11 @@ class BankController extends Controller
         ]);
     }
 
+    /**
+     * Advanced Loan Calculation.
+     *
+     * <p>This endpoint handles more complex loan calculations that might include additional factors such as fees, compound interest, or custom repayment structures. The method processes detailed loan data to deliver accurate, in-depth results.</p>
+     */
     public function calculateLoanAdvanced(Request $request)
     {
         $principal = $request->input('principal'); // Loan amount
@@ -89,6 +99,11 @@ class BankController extends Controller
         ]);
     }
 
+    /**
+     * Fixed Deposit Calculation.
+     *
+     * <p>This API calculates the maturity amount and interest earned for a fixed deposit. Input parameters such as the principal amount, rate of interest, and deposit period are required to generate accurate outputs.</p>
+     */
     public function calculateFD(Request $request)
     {
         $principal = $request->input('principal'); // Deposit amount
@@ -138,6 +153,11 @@ class BankController extends Controller
         ]);
     }
 
+    /**
+     * Cumulative Fixed Deposit Calculation.
+     *
+     * <p>This endpoint calculates the final amount of a cumulative fixed deposit, considering compounded interest over the chosen term. It helps users understand the total return on their deposit investments.</p>
+     */
     public function calculateCumulativeFD(Request $request)
     {
         $principal = $request->input('principal'); // Initial deposit amount
@@ -178,6 +198,11 @@ class BankController extends Controller
         ]);
     }
 
+    /**
+     * Recurring Deposit Calculation.
+     *
+     * <p>Calculate the future value of a recurring deposit with this API. Users need to provide the monthly installment amount, interest rate, and duration to receive a result showing the total maturity value.</p>
+     */
     public function calculateRD(Request $request)
     {
         $monthlyInstallment = $request->input('monthly_installment'); // Amount deposited monthly
@@ -224,6 +249,11 @@ class BankController extends Controller
         ]);
     }
 
+    /**
+     * Fetch Interest Rates.
+     *
+     * <p>This API endpoint retrieves current interest rates applicable for different financial products. It ensures users have access to up-to-date information for better decision-making regarding investments or loans.</p>
+     */
     public function getInterestRates()
     {
         $rates = [

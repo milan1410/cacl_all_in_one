@@ -6,6 +6,11 @@ use Illuminate\Http\Request;
 
 class PostOfficeController extends Controller
 {
+    /**
+     * PPF Fixed Deposit Calculation.
+     *
+     * <p>This endpoint calculates the interest and maturity value for a Public Provident Fund (PPF) with fixed contributions. It takes the principal amount, interest rate, and tenure to generate an estimate.</p>
+     */
     public function calculatePPFFixed(Request $request)
     {
         $annualContribution = $request->input('annual_contribution'); // Fixed amount deposited each year
@@ -32,26 +37,31 @@ class PostOfficeController extends Controller
         ]);
     }
 
+    /**
+     * PPF Variable Contribution Calculation.
+     *
+     * <p>This API calculates the projected value of a PPF investment with variable contributions over the tenure. It accepts varying amounts as input and computes the expected returns accordingly.</p>
+     */
     public function calculatePPFVariable(Request $request)
     {
         $contributions = $request->input('contributions'); // Array of annual contributions
         $annualInterestRate = $request->input('annual_interest_rate'); // Annual interest rate in percentage
-    
+
         if (!is_array($contributions) || !is_numeric($annualInterestRate)) {
             return response()->json(['error' => 'Inputs must be valid. Contributions should be an array and interest rate a number.'], 400);
         }
-    
+
         $r = $annualInterestRate / 100; // Convert to decimal
         $termInYears = count($contributions); // Number of years based on the contributions array
         $maturityAmount = 0;
-    
+
         for ($i = 0; $i < $termInYears; $i++) {
             $maturityAmount += $contributions[$i] * pow(1 + $r, $termInYears - $i);
         }
-    
+
         $totalDeposits = array_sum($contributions);
         $totalInterest = $maturityAmount - $totalDeposits;
-    
+
         return response()->json([
             'contributions' => $contributions,
             'total_deposits' => round($totalDeposits, 2),
@@ -62,6 +72,11 @@ class PostOfficeController extends Controller
         ]);
     }
 
+    /**
+     * Sukanya Samriddhi Yojana (SSY) Calculation.
+     *
+     * <p>Calculate the returns for investments under the Sukanya Samriddhi Yojana scheme. Input parameters include the investment amount, current interest rate, and duration to determine maturity benefits.</p>
+     */
     public function calculateSSY(Request $request)
     {
         $annualContribution = $request->input('annual_contribution'); // Amount deposited each year
@@ -88,6 +103,11 @@ class PostOfficeController extends Controller
         ]);
     }
 
+    /**
+     * Senior Citizen Savings Scheme (SCSS) Calculation.
+     *
+     * <p>This endpoint calculates the interest and final value for investments in the SCSS. Users need to input the principal amount and duration to receive comprehensive results.</p>
+     */
     public function calculateSCSS(Request $request)
     {
         $principalAmount = $request->input('principal_amount'); // Initial investment
@@ -115,11 +135,16 @@ class PostOfficeController extends Controller
         ]);
     }
 
+    /**
+     * Kisan Vikas Patra (KVP) Calculation.
+     *
+     * <p>Calculate the growth of investments in Kisan Vikas Patra. This API takes the initial investment and computes the maturity value based on the applicable interest rate and tenure.</p>
+     */
     public function calculateKVP(Request $request)
     {
         $principalAmount = $request->input('principal_amount'); // Initial investment
         $annualInterestRate = $request->input('annual_interest_rate'); // Annual interest rate in percentage
-        
+
         if (!is_numeric($principalAmount) || !is_numeric($annualInterestRate)) {
             return response()->json(['error' => 'Inputs must be valid numbers'], 400);
         }
@@ -138,6 +163,11 @@ class PostOfficeController extends Controller
         ]);
     }
 
+    /**
+     * Mahila Samman Savings Certificate Calculation.
+     *
+     * <p>This endpoint calculates the maturity value for investments in the Mahila Samman Savings Certificate scheme, using inputs such as the invested amount and interest rate.</p>
+     */
     public function calculateMahilaSamman(Request $request)
     {
         $principalAmount = $request->input('principal_amount'); // Initial investment
@@ -167,6 +197,11 @@ class PostOfficeController extends Controller
         ]);
     }
 
+    /**
+     * Monthly Income Scheme (MIS) Calculation.
+     *
+     * <p>Calculate the monthly interest payouts and maturity value of investments in the Post Office Monthly Income Scheme. This endpoint helps investors understand their monthly income from the scheme.</p>
+     */
     public function calculateMIS(Request $request)
     {
         $principalAmount = $request->input('principal_amount');
@@ -184,7 +219,12 @@ class PostOfficeController extends Controller
             'monthly_interest' => round($monthlyInterest, 2)
         ]);
     }
-    
+
+    /**
+     * Post Office Recurring Deposit (RD) Calculation.
+     *
+     * <p>This API calculates the maturity amount for a recurring deposit with the Post Office. It processes inputs such as monthly installment, interest rate, and term duration to produce results.</p>
+     */
     public function calculateRD(Request $request)
     {
         $monthlyDeposit = $request->input('monthly_deposit');
@@ -202,6 +242,12 @@ class PostOfficeController extends Controller
             'maturity_amount' => round($A, 2)
         ]);
     }
+
+    /**
+     * Time Deposit (TD) Calculation.
+     *
+     * <p>Calculate the maturity value and interest for time deposits in the Post Office. Users need to input the deposit amount, interest rate, and term for accurate output.</p>
+     */
     public function calculateTD(Request $request)
     {
         $principalAmount = $request->input('principal_amount');
@@ -217,6 +263,12 @@ class PostOfficeController extends Controller
             'maturity_amount' => round($A, 2)
         ]);
     }
+
+    /**
+     * National Savings Certificate (NSC) Calculation.
+     *
+     * <p>Calculate the maturity amount and interest for investments in the National Savings Certificate. Input details like the principal amount and tenure to get results.</p>
+     */
     public function calculateNSC(Request $request)
     {
         $principalAmount = $request->input('principal_amount');
@@ -232,6 +284,12 @@ class PostOfficeController extends Controller
             'maturity_amount' => round($A, 2)
         ]);
     }
+
+    /**
+     * Post Office Interest Rates.
+     *
+     * <p>This API provides the latest interest rates for various Post Office financial products. It is essential for users to stay informed about current rates for better financial planning.</p>
+     */
     public function getInterestRates()
     {
         $rates = [
@@ -246,6 +304,4 @@ class PostOfficeController extends Controller
 
         return response()->json($rates);
     }
-
-    
 }
