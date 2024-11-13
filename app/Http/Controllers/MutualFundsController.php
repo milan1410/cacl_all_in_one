@@ -115,6 +115,90 @@ class MutualFundsController extends Controller
     }
 
     /**
+     * Lumpsum Calculation.
+     *
+     * <p>Calculate the future value of a Lumpsum investment based on regular contributions, interest rate, and investment period. This endpoint helps users plan their investment strategy.</p>
+     */
+    public function calculateLumpsum(Request $request)
+    {
+        // Validate the incoming request
+        $request->validate([
+            'initial_investment' => 'required|numeric|min:1',
+            'annual_return_rate' => 'required|numeric|min:0',
+            'investment_duration_years' => 'required|integer|min:1'
+        ]);
+
+        // Retrieve input values
+        $initialInvestment = $request->input('initial_investment');
+        $annualReturnRate = $request->input('annual_return_rate'); // in percentage
+        $investmentDurationYears = $request->input('investment_duration_years');
+
+        // Calculate final maturity amount using compound interest formula: A = P(1 + r/n)^(nt)
+        // Since it's a lumpsum, compounding is assumed annually (n=1)
+        $ratePerPeriod = $annualReturnRate / 100;
+        $maturityAmount = $initialInvestment * pow((1 + $ratePerPeriod), $investmentDurationYears);
+        $totalInterestEarned = $maturityAmount - $initialInvestment;
+
+        // Return the result as JSON
+        return response()->json([
+            'initial_investment' => round($initialInvestment, 2),
+            'total_interest_earned' => round($totalInterestEarned, 2),
+            'maturity_amount' => round($maturityAmount, 2),
+            'annual_return_rate' => $annualReturnRate,
+            'investment_duration_years' => $investmentDurationYears,
+        ]);
+    }
+
+    /**
+     * Mutual Fund Returns Calculation.
+     *
+     * <p>Calculate the future value of a Lumpsum investment based on regular contributions, interest rate, and investment period. This endpoint helps users plan their investment strategy.</p>
+     */
+    public function calculateReturns(Request $request)
+    {
+        // Validate the incoming request
+        $request->validate([
+            'investment_amount' => 'required|numeric|min:1',
+            'annual_return_rate' => 'required|numeric|min:0',
+            'investment_duration_years' => 'required|integer|min:1',
+            'investment_type' => 'required|string|in:lumpsum,sip',
+            'sip_amount' => 'nullable|numeric|min:1', // Only used if investment type is SIP
+        ]);
+
+        $investmentType = $request->input('investment_type');
+        $annualReturnRate = $request->input('annual_return_rate') / 100; // Convert percentage to decimal
+        $investmentDurationYears = $request->input('investment_duration_years');
+        $totalInterestEarned = 0;
+        $maturityAmount = 0;
+
+        if ($investmentType === 'lumpsum') {
+            // Lumpsum calculation using compound interest formula: A = P(1 + r)^t
+            $initialInvestment = $request->input('investment_amount');
+            $maturityAmount = $initialInvestment * pow((1 + $annualReturnRate), $investmentDurationYears);
+            $totalInterestEarned = $maturityAmount - $initialInvestment;
+        } elseif ($investmentType === 'sip') {
+            // SIP calculation formula: FV = P * [(1 + r)^n - 1] * (1 + r) / r
+            $sipAmount = $request->input('sip_amount');
+            $months = $investmentDurationYears * 12;
+            $monthlyRate = $annualReturnRate / 12;
+
+            for ($i = 0; $i < $months; $i++) {
+                $maturityAmount += $sipAmount * pow(1 + $monthlyRate, $months - $i);
+            }
+            $totalInterestEarned = $maturityAmount - ($sipAmount * $months);
+        }
+
+        // Return the result as JSON
+        return response()->json([
+            'investment_type' => $investmentType,
+            'total_interest_earned' => round($totalInterestEarned, 2),
+            'maturity_amount' => round($maturityAmount, 2),
+            'annual_return_rate' => $request->input('annual_return_rate'),
+            'investment_duration_years' => $investmentDurationYears,
+        ]);
+    }
+
+    /**
      * Systematic Withdrawal Plan (SWP) Calculation.
      *
      * <p>This API calculates the withdrawal schedule and remaining balance for a Systematic Withdrawal Plan. It helps users plan regular withdrawals while keeping their investments in mutual funds.</p>

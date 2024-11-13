@@ -45,6 +45,8 @@ Route::get('/mutual-funds-overview', [MutualFundsController::class, 'getOverview
 Route::get('/mutual-funds-top-listing', [MutualFundsController::class, 'getTopListing']);
 Route::get('/elss-calculate', [MutualFundsController::class, 'calculateELSS']);
 Route::get('/sip-calculate', [MutualFundsController::class, 'calculateSIP']);
+Route::get('/lumpsum-calculate', [MutualFundsController::class, 'calculateLumpsum']);
+Route::get('/return-calculate', [MutualFundsController::class, 'calculateReturns']);
 Route::get('/swp-calculate', [MutualFundsController::class, 'calculateSWP']);
 
 //Retirement
@@ -74,3 +76,10 @@ Route::get('/54ec-bonds-info', [BondController::class, 'info54ECBonds']);
 Route::get('/compound-interest', [FinanceController::class, 'calculateCompoundInterest']);
 Route::get('/simple-interest', [FinanceController::class, 'calculateSimpleInterest']);
 Route::get('/inflation', [FinanceController::class, 'calculateInflation']);
+Route::get('/emi-calculate', [FinanceController::class, 'calculateEMI']);
+Route::get('/gst-calculate', [FinanceController::class, 'calculateGST']);
+Route::get('/cagr-calculate', [FinanceController::class, 'calculateCAGR']);
+Route::get('/gratuity-calculate', [FinanceController::class, 'calculateGratuity']);
+Route::get('/hra-calculate', [FinanceController::class, 'calculateHRA']);
+Route::get('/apy-calculate', [FinanceController::class, 'calculateAPY']);
+Route::get('/retirement-calculate', [FinanceController::class, 'calculateRetirement']);
