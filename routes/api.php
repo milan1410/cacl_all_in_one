@@ -18,9 +18,9 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 
 Route::get('/calculate', [CalculatorController::class, 'calculate']);
 //BANK
-Route::get('/loan-basic-calculate', [BankController::class, 'calculateLoanBasic']);
+Route::get('/loan-basic-calculate', [BankController::class, 'calculateLoanBasic']); //Done
 Route::get('/loan-advanced-calculate', [BankController::class, 'calculateLoanAdvanced']);
-Route::get('/fixed-deposit-calculate', [BankController::class, 'calculateFD']);
+Route::get('/fixed-deposit-calculate', [BankController::class, 'calculateFD']); //Done
 Route::get('/cumulative-fixed-deposit-calculate', [BankController::class, 'calculateCumulativeFD']);
 Route::get('/recurring-deposit-calculate', [BankController::class, 'calculateRD']);
 Route::get('/interest-rates', [BankController::class, 'getInterestRates']);

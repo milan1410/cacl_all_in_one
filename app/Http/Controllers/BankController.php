@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class BankController extends Controller
 {
@@ -16,8 +17,9 @@ class BankController extends Controller
         $principal = $request->input('principal'); // Loan amount
         $annualInterestRate = $request->input('annual_interest_rate'); // Annual interest rate in percentage
         $termInYears = $request->input('term_in_years'); // Loan term in years
+        $extraPayment = $request->input('extra_payment', 0); // Optional extra monthly payment
 
-        if (!is_numeric($principal) || !is_numeric($annualInterestRate) || !is_numeric($termInYears)) {
+        if (!is_numeric($principal) || !is_numeric($annualInterestRate) || !is_numeric($termInYears) || !is_numeric($extraPayment)) {
             return response()->json(['error' => 'Inputs must be valid numbers'], 400);
         }
 
@@ -25,21 +27,60 @@ class BankController extends Controller
         $monthlyInterestRate = ($annualInterestRate / 100) / 12;
         $numberOfPayments = $termInYears * 12;
 
-        if ($monthlyInterestRate == 0) {
-            // Handle zero interest rate (simple division)
-            $monthlyPayment = $principal / $numberOfPayments;
-        } else {
-            // Calculate monthly payment using the loan formula
-            $monthlyPayment = $principal * $monthlyInterestRate * pow(1 + $monthlyInterestRate, $numberOfPayments) /
-                (pow(1 + $monthlyInterestRate, $numberOfPayments) - 1);
+        $monthlyPayment = ($monthlyInterestRate == 0) ? $principal / $numberOfPayments :
+            $principal * $monthlyInterestRate * pow(1 + $monthlyInterestRate, $numberOfPayments) /
+            (pow(1 + $monthlyInterestRate, $numberOfPayments) - 1);
+
+        $totalInterest = 0;
+        $remainingBalance = $principal;
+        $amortizationSchedule = [];
+
+        // Start from the current month
+        $currentDate = Carbon::now();
+        $startMonth = $currentDate->format('M'); // e.g., 'Jan'
+        $startYear = $currentDate->year;
+
+        $monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        $startMonthIndex = array_search($startMonth, $monthNames);
+
+        for ($i = 0; $i < $numberOfPayments && $remainingBalance > 0; $i++) {
+            $currentMonthIndex = ($startMonthIndex + $i) % 12;
+            $currentYear = $startYear + floor(($startMonthIndex + $i) / 12);
+
+            $interestPayment = $remainingBalance * $monthlyInterestRate;
+            $principalPayment = $monthlyPayment - $interestPayment + $extraPayment;
+
+            if ($remainingBalance < $principalPayment) {
+                $principalPayment = $remainingBalance;
+            }
+
+            $remainingBalance -= $principalPayment;
+            $totalInterest += $interestPayment;
+
+            // Calculate cumulative principal percentage paid
+            $principalPaidSoFar = $principal - $remainingBalance;
+            $cumulativePrincipalPercentage = ($principalPaidSoFar / $principal) * 100;
+
+            $amortizationSchedule[] = [
+                'month' => $monthNames[$currentMonthIndex],
+                'year' => $currentYear,
+                'principal_paid' => '₹' . number_format($principalPayment, 0),
+                'interest_charged' => '₹' . number_format($interestPayment, 0),
+                'total_payment' => '₹' . number_format($monthlyPayment + $extraPayment, 0),
+                'balance' => '₹' . number_format(max($remainingBalance, 0), 0),
+                'cumulative_principal_percentage' => number_format($cumulativePrincipalPercentage, 2) . '%',
+            ];
         }
 
         return response()->json([
-            'monthly_payment' => round($monthlyPayment, 2),
-            'total_payment' => round($monthlyPayment * $numberOfPayments, 2),
-            'total_interest' => round(($monthlyPayment * $numberOfPayments) - $principal, 2),
+            'monthly_emi' => '₹' . number_format($monthlyPayment, 2),
+            'principal_amount' => '₹' . number_format($principal, 2),
+            'total_interest' => '₹' . number_format($totalInterest, 2),
+            'total_amount' => '₹' . number_format($monthlyPayment * min($numberOfPayments, $i) + $extraPayment * ($i - 1), 2),
+            'amortization_schedule' => $amortizationSchedule,
         ]);
     }
+
 
     /**
      * Advanced Loan Calculation.
@@ -61,18 +102,26 @@ class BankController extends Controller
         $monthlyInterestRate = ($annualInterestRate / 100) / 12;
         $numberOfPayments = $termInYears * 12;
 
-        if ($monthlyInterestRate == 0) {
-            $monthlyPayment = $principal / $numberOfPayments;
-        } else {
-            $monthlyPayment = $principal * $monthlyInterestRate * pow(1 + $monthlyInterestRate, $numberOfPayments) /
-                (pow(1 + $monthlyInterestRate, $numberOfPayments) - 1);
-        }
+        $monthlyPayment = ($monthlyInterestRate == 0) ? $principal / $numberOfPayments :
+            $principal * $monthlyInterestRate * pow(1 + $monthlyInterestRate, $numberOfPayments) /
+            (pow(1 + $monthlyInterestRate, $numberOfPayments) - 1);
 
         $totalInterest = 0;
-        $amortizationSchedule = [];
         $remainingBalance = $principal;
+        $amortizationSchedule = [];
 
-        for ($i = 1; $i <= $numberOfPayments && $remainingBalance > 0; $i++) {
+        // Start from the current month
+        $currentDate = Carbon::now();
+        $startMonth = $currentDate->format('M'); // e.g., 'Jan'
+        $startYear = $currentDate->year;
+
+        $monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        $startMonthIndex = array_search($startMonth, $monthNames);
+
+        for ($i = 0; $i < $numberOfPayments && $remainingBalance > 0; $i++) {
+            $currentMonthIndex = ($startMonthIndex + $i) % 12;
+            $currentYear = $startYear + floor(($startMonthIndex + $i) / 12);
+
             $interestPayment = $remainingBalance * $monthlyInterestRate;
             $principalPayment = $monthlyPayment - $interestPayment + $extraPayment;
 
@@ -83,21 +132,32 @@ class BankController extends Controller
             $remainingBalance -= $principalPayment;
             $totalInterest += $interestPayment;
 
+            // Calculate cumulative principal percentage paid
+            $principalPaidSoFar = $principal - $remainingBalance;
+            $cumulativePrincipalPercentage = ($principalPaidSoFar / $principal) * 100;
+
             $amortizationSchedule[] = [
-                'month' => $i,
-                'interest_payment' => round($interestPayment, 2),
-                'principal_payment' => round($principalPayment, 2),
-                'remaining_balance' => round($remainingBalance, 2),
+                'month' => $monthNames[$currentMonthIndex],
+                'year' => $currentYear,
+                'principal_paid' => '₹' . number_format($principalPayment, 0),
+                'interest_charged' => '₹' . number_format($interestPayment, 0),
+                'total_payment' => '₹' . number_format($monthlyPayment + $extraPayment, 0),
+                'balance' => '₹' . number_format(max($remainingBalance, 0), 0),
+                'cumulative_principal_percentage' => number_format($cumulativePrincipalPercentage, 2) . '%',
             ];
         }
 
         return response()->json([
-            'monthly_payment' => round($monthlyPayment, 2),
-            'total_payment' => round($monthlyPayment * min($numberOfPayments, $i - 1), 2),
-            'total_interest' => round($totalInterest, 2),
+            'monthly_emi' => '₹' . number_format($monthlyPayment, 2),
+            'principal_amount' => '₹' . number_format($principal, 2),
+            'total_interest' => '₹' . number_format($totalInterest, 2),
+            'total_amount' => '₹' . number_format($monthlyPayment * min($numberOfPayments, $i) + $extraPayment * ($i - 1), 2),
             'amortization_schedule' => $amortizationSchedule,
         ]);
     }
+
+
+
 
     /**
      * Fixed Deposit Calculation.
@@ -136,22 +196,25 @@ class BankController extends Controller
 
         for ($i = 1; $i <= $totalPayouts; $i++) {
             $interestPayment = $remainingBalance * $interestRatePerPayout;
+            $remainingBalance += $interestPayment; // Add the interest to the remaining balance for next calculation
             $totalInterest += $interestPayment;
 
             $amortizationSchedule[] = [
                 'payout_number' => $i,
-                'interest_payment' => round($interestPayment, 2),
-                'remaining_balance' => round($remainingBalance, 2),
+                'interest_payment' => '₹' . number_format($interestPayment, 2),
+                'remaining_balance' => '₹' . number_format($remainingBalance, 2),
             ];
         }
 
         return response()->json([
-            'principal' => $principal,
-            'total_interest' => round($totalInterest, 2),
+            'principal' => '₹' . number_format($principal, 2),
+            'total_interest' => '₹' . number_format($totalInterest, 2),
+            'total_amount' => '₹' . number_format($principal + $totalInterest, 2),
             'total_payouts' => $totalPayouts,
             'amortization_schedule' => $amortizationSchedule,
         ]);
     }
+
 
     /**
      * Cumulative Fixed Deposit Calculation.
@@ -205,49 +268,41 @@ class BankController extends Controller
      */
     public function calculateRD(Request $request)
     {
-        $monthlyInstallment = $request->input('monthly_installment'); // Amount deposited monthly
-        $annualInterestRate = $request->input('annual_interest_rate'); // Annual interest rate in percentage
-        $termInYears = $request->input('term_in_years'); // Term in years
-        $compoundingFrequency = $request->input('compounding_frequency', 'quarterly'); // 'monthly', 'quarterly', 'annually'
-
-        if (!is_numeric($monthlyInstallment) || !is_numeric($annualInterestRate) || !is_numeric($termInYears)) {
-            return response()->json(['error' => 'Inputs must be valid numbers'], 400);
-        }
-
-        // Map compounding frequencies to the number of times interest is compounded per year
-        $compoundingMap = [
-            'monthly' => 12,
-            'quarterly' => 4,
-            'annually' => 1,
-        ];
-
-        if (!array_key_exists($compoundingFrequency, $compoundingMap)) {
-            return response()->json(['error' => 'Invalid compounding frequency'], 400);
-        }
-
-        $n = $compoundingMap[$compoundingFrequency];
-        $r = ($annualInterestRate / 100) / $n; // Rate per period
-        $totalPeriods = $termInYears * $n;
-
-        $maturityAmount = 0;
-
-        for ($i = 0; $i < $totalPeriods; $i++) {
-            $maturityAmount += $monthlyInstallment * pow(1 + $r, $totalPeriods - $i);
-        }
-
-        $totalDeposits = $monthlyInstallment * $termInYears * 12;
-        $totalInterest = $maturityAmount - $totalDeposits;
-
-        return response()->json([
-            'monthly_installment' => $monthlyInstallment,
-            'total_deposits' => round($totalDeposits, 2),
-            'total_interest' => round($totalInterest, 2),
-            'maturity_amount' => round($maturityAmount, 2),
-            'compounding_frequency' => $compoundingFrequency,
-            'term_in_years' => $termInYears,
-            'annual_interest_rate' => $annualInterestRate,
-        ]);
+         // Retrieve input values
+         $monthlyDeposit = $request->input('monthly_deposit');
+         $annualInterestRate = $request->input('annual_interest_rate');
+         $months = $request->input('months');
+ 
+         // Calculate total deposits
+         $totalDeposits = $monthlyDeposit * $months;
+ 
+         // Calculate maturity amount and interest
+         $interestRatePerMonth = ($annualInterestRate / 100) / 12;
+         $maturityAmount = 0;
+         for ($i = 0; $i < $months; $i++) {
+             $maturityAmount += $monthlyDeposit * pow(1 + $interestRatePerMonth, $months - $i);
+         }
+         $totalInterest = $maturityAmount - $totalDeposits;
+ 
+         // Calculate monthly installment (for display purposes)
+         $monthlyInstallment = $monthlyDeposit;
+ 
+         // Compounding frequency and term in years (for display purposes)
+         $compoundingFrequency = 12; // Monthly compounding
+         $termInYears = $months / 12;
+ 
+         // Return the result as JSON
+         return response()->json([
+             'monthly_installment' => round($monthlyInstallment, 2),
+             'total_deposits' => round($totalDeposits, 2),
+             'total_interest' => round($totalInterest, 2),
+             'maturity_amount' => round($maturityAmount, 2),
+             'compounding_frequency' => $compoundingFrequency,
+             'term_in_years' => $termInYears,
+             'annual_interest_rate' => $annualInterestRate,
+         ]);
     }
+
 
     /**
      * Fetch Interest Rates.
